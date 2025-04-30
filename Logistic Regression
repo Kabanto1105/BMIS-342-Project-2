@@ -1,0 +1,81 @@
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LogisticRegression
+from sklearn.preprocessing import StandardScaler
+from sklearn.metrics import accuracy_score, roc_auc_score
+
+# Load data
+df = pd.read_csv("Fundraising.csv")
+
+# Prepare features and target
+X = df.drop(columns=["Row Id", "Row Id.", "TARGET_B", "TARGET_D"])
+y = df["TARGET_B"]
+
+# 60/40 train-test split
+X_train, X_valid, y_train, y_valid = train_test_split(X, y, test_size=0.4, random_state=12345)
+
+# Scale features
+scaler = StandardScaler()
+X_train_scaled = scaler.fit_transform(X_train)
+X_valid_scaled = scaler.transform(X_valid)
+
+# Logistic Regression (All Features)
+model_all = LogisticRegression(max_iter=1000)
+model_all.fit(X_train_scaled, y_train)
+
+# Predictions
+y_pred_all = model_all.predict(X_valid_scaled)
+y_proba_all = model_all.predict_proba(X_valid_scaled)[:, 1]
+
+# Accuracy & AUC
+acc_all = accuracy_score(y_valid, y_pred_all)
+auc_all = roc_auc_score(y_valid, y_proba_all)
+
+# Profit function
+def calculate_profit(y_true, y_pred):
+    correct_donors = ((y_true == 1) & (y_pred == 1)).sum()
+    mailed = y_pred.sum()
+    return 13 * correct_donors - 0.68 * mailed
+
+# Net profit (all features)
+profit_all = calculate_profit(y_valid, y_pred_all)
+
+# ---- TOP 5 FEATURES MODEL ----
+# Get top 5 most important features
+importance = abs(model_all.coef_[0])
+top5 = pd.Series(importance, index=X.columns).sort_values(ascending=False).head(5).index.tolist()
+
+# Filter data
+X_top5 = df[top5]
+X_train5, X_valid5, y_train5, y_valid5 = train_test_split(X_top5, y, test_size=0.4, random_state=12345)
+
+# Scale
+scaler5 = StandardScaler()
+X_train5_scaled = scaler5.fit_transform(X_train5)
+X_valid5_scaled = scaler5.transform(X_valid5)
+
+# Logistic Regression (Top 5)
+model_top5 = LogisticRegression(max_iter=1000)
+model_top5.fit(X_train5_scaled, y_train5)
+
+# Predict
+y_pred_top5 = model_top5.predict(X_valid5_scaled)
+y_proba_top5 = model_top5.predict_proba(X_valid5_scaled)[:, 1]
+
+# Accuracy & AUC
+acc_top5 = accuracy_score(y_valid5, y_pred_top5)
+auc_top5 = roc_auc_score(y_valid5, y_proba_top5)
+
+# Net profit (top 5 features)
+profit_top5 = calculate_profit(y_valid5, y_pred_top5)
+
+# Results
+print(" Logistic Regression (All Features):")
+print("Accuracy:", round(acc_all, 3))
+print("AUC:", round(auc_all, 3))
+print("Net Profit: $", round(profit_all, 2))
+print("\n Logistic Regression (Top 5 Features):")
+print("Top 5:", top5)
+print("Accuracy:", round(acc_top5, 3))
+print("AUC:", round(auc_top5, 3))
+print("Net Profit: $", round(profit_top5, 2))
