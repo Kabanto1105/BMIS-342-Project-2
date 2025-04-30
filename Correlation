@@ -1,0 +1,6 @@
+#Correlation Method/
+corrlist = mail.corrwith(mail["TARGET_B"])
+columns = mail.columns
+for i in range(len(corrlist) - 1):
+    if corrlist.iloc[i] > .02:
+        print(columns[i], corrlist.iloc[i])
