@@ -1,0 +1,77 @@
+# Re-import libraries after code execution environment reset
+import pandas as pd
+import seaborn as sns
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+from sklearn.neural_network import MLPClassifier
+from sklearn import metrics
+from sklearn.preprocessing import StandardScaler
+
+# Re-load dataset
+
+mail = pd.read_csv('Fundraising.csv')
+
+# Drop TARGET_D
+mail.drop(columns='TARGET_D', inplace=True)
+
+# Identify predictors with correlation > 0.02
+correlations = mail.corrwith(mail["TARGET_B"])
+selected_features = correlations[correlations > 0.02].index.tolist()
+if 'TARGET_B' in selected_features:
+    selected_features.remove('TARGET_B')
+
+# Define features and target
+X = mail[selected_features]
+y = mail['TARGET_B']
+
+# Handle missing values
+X = X.fillna(X.mean())
+
+# Scale features
+scaler = StandardScaler()
+X_scaled = scaler.fit_transform(X)
+
+# Split data
+X_train, X_test, y_train, y_test = train_test_split(X_scaled, y,
+                                                    test_size=0.3,
+                                                    random_state=1,
+                                                    stratify=y)
+
+# Train neural network
+ann_clf = MLPClassifier(hidden_layer_sizes=(20,),
+                        activation='logistic',
+                        solver='lbfgs',
+                        max_iter=1000,
+                        random_state=1)
+
+ann_clf.fit(X_train, y_train)
+
+# Training performance
+preds_train = ann_clf.predict(X_train)
+print("Training Data Classification Report:")
+print(metrics.classification_report(y_true=y_train, y_pred=preds_train))
+
+# Test performance
+preds_test = ann_clf.predict(X_test)
+print("Test Data Classification Report:")
+print(metrics.classification_report(y_true=y_test, y_pred=preds_test))
+
+# Confusion Matrix - Training Data
+fig, ax = plt.subplots(figsize=(6, 6))
+metrics.ConfusionMatrixDisplay.from_estimator(ann_clf,
+                                              X_train,
+                                              y_train,
+                                              cmap='Blues',
+                                              colorbar=False,
+                                              ax=ax)
+plt.title('Confusion Matrix - Training Data')
+
+# Confusion Matrix - Test Data
+fig, ax = plt.subplots(figsize=(6, 6))
+metrics.ConfusionMatrixDisplay.from_estimator(ann_clf,
+                                              X_test,
+                                              y_test,
+                                              cmap='Blues',
+                                              colorbar=False,
+                                              ax=ax)
+plt.title('Confusion Matrix - Test Data')
