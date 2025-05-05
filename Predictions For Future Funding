@@ -1,0 +1,5 @@
+#predict data
+preds = log_regress.predict_proba(X_test)
+preds_class = pd.DataFrame(preds,
+                           columns = ['Non-Donor', 'Donor'])
+preds_class
