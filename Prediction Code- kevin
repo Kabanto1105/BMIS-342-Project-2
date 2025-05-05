@@ -1,0 +1,55 @@
+### Import required libraries after environment reset
+import pandas as pd
+from sklearn.preprocessing import StandardScaler
+from sklearn.neural_network import MLPClassifier
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import classification_report, confusion_matrix, roc_auc_score
+from sklearn import metrics
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+### load training dataset to rebuild model and scaler
+train_df = pd.read_csv('Fundraising.csv')
+train_df.drop(columns='TARGET_D', inplace=True)
+correlations = train_df.corrwith(train_df["TARGET_B"])
+selected_features = correlations[correlations > 0.02].index.tolist()
+if 'TARGET_B' in selected_features:
+    selected_features.remove('TARGET_B')
+
+X = train_df[selected_features].fillna(train_df.mean())
+y = train_df['TARGET_B']
+
+scaler = StandardScaler()
+X_scaled = scaler.fit_transform(X)
+
+X_train, X_test, y_train, y_test = train_test_split(X_scaled, y,
+                                                    test_size=0.3,
+                                                    random_state=42,
+                                                    stratify=y)
+
+mlp = MLPClassifier(hidden_layer_sizes=(10,), max_iter=500, random_state=42)
+mlp.fit(X_train, y_train)
+
+### Load future dataset
+future_df = pd.read_csv('FutureFundraising.csv')
+
+### Apply same preprocessing
+future_df = future_df[selected_features].fillna(future_df.mean())
+scaled_future = scaler.transform(future_df)
+
+### Predict
+future_predictions = mlp.predict(scaled_future)
+future_probabilities = mlp.predict_proba(scaled_future)[:, 1]
+
+### Results DataFrame
+results_df = pd.DataFrame({
+    'Predicted_Donor': future_predictions,
+    'Probability': future_probabilities
+})
+
+### Sort by probability
+sorted_results = results_df.sort_values(by='Probability', ascending=False).reset_index(drop=True)
+# Display the sorted results in your notebook
+print(sorted_results.head(20))  # Show top 20 for example
+# Display all predictions
+sorted_results
