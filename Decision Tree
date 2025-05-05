@@ -1,0 +1,225 @@
+## Step 1 - Import Libraries
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.model_selection import train_test_split
+from sklearn import metrics
+
+## Step 2 - Read in Libraries
+fundraising = pd.read_csv(r"C:/Users/katey/Downloads/Fundraising.csv")
+fundraising.info()
+
+## Step 3 - Lambda Function
+fundraising['Donor?'] = fundraising['TARGET_B'].apply(lambda x: 'Donor' if x == 1
+                                                     else 'Non Donor')
+
+fundraising.head()
+
+## Step 4 - 
+print(fundraising['INCOME'].value_counts())
+
+## Step 5 - 
+fundraising['INCOME'] = fundraising['INCOME'].fillna(0)
+
+fundraising['INCOME_ORDINAL'] = fundraising['INCOME'].astype(int)
+
+## Step 6 - 
+fundraising['AVGGIFT_to_INC'] = fundraising['AVGGIFT'] / (fundraising['INCOME_ORDINAL']+1)
+
+## Step 7 - 
+def categorize_income(val):
+    if val in [1,2]:
+        return 'Low'
+    elif val in [3,4,5]:
+        return 'Middle'
+    else:
+        return 'High'
+
+## Step 8 - 
+fundraising['income_category'] = fundraising['INCOME'].apply(categorize_income)
+
+## Step 9 - 
+y = fundraising['TARGET_B']
+y.unique()
+
+## Step 10 - 
+X = fundraising[['Row Id','Row Id.','zipconvert_2','zipconvert_3','zipconvert_4','zipconvert_5',
+                'homeowner dummy','NUMCHLD','INCOME','gender dummy','WEALTH','HV','Icmed','Icavg',
+                'IC15','NUMPROM','RAMNTALL','MAXRAMNT','LASTGIFT','totalmonths','TIMELAG','AVGGIFT',
+                'INCOME_ORDINAL','AVGGIFT_to_INC']]
+
+X_names = list(X.columns)
+
+y_names = ['Donor','Non Donor']
+
+print(X_names)
+print(y_names)
+
+## Step 11 - 
+X_train, X_test, y_train, y_test = train_test_split(X,
+                                                   y,
+                                                   test_size = 0.3,
+                                                   random_state = 1,
+                                                   stratify = fundraising['Donor?'])
+
+## Step 12 - 
+dt_clf = DecisionTreeClassifier(criterion = 'gini',
+                               max_depth = 5,
+                               random_state = 1)
+
+dt_clf.fit(X_train,
+          y_train)
+
+## Step 13 - 
+preds_train = dt_clf.predict(X_train)
+preds_test = dt_clf.predict(X_test)
+
+## Step 14 - 
+from sklearn import tree
+
+fig = plt.figure(figsize = (10,8))
+
+_ = tree.plot_tree(dt_clf,
+             feature_names = X_names,
+             class_names = y_names,
+             filled = True);
+
+## Step 15 - 
+dt_clf.feature_importances_
+
+## Step 16 - 
+metrics.confusion_matrix(y_true = y_train,
+                        y_pred = preds_train)
+
+## Step 17 - 
+columns_to_drop = ['Row Id','Row Id.','zipconvert_2','zipconvert_3',
+                 'zipconvert_4','zipconvert_5','homeowner dummy','NUMCHLD','INCOME','gender dummy',
+                 'WEALTH','Icmed','Icavg','LASTGIFT','TIMELAG','AVGGIFT','INCOME_ORDINAL']
+
+fundraising = fundraising.drop(columns=columns_to_drop)
+
+fundraising.head()
+
+## Step 18 - 
+X = fundraising[['HV','IC15','NUMPROM','RAMNTALL','MAXRAMNT','totalmonths', 'AVGGIFT_to_INC']]
+
+X_names = list(X.columns)
+
+y_names = ['Donor','Non Donor']
+
+print(X_names)
+print(y_names)
+
+## Step 19 - 
+X_train, X_test, y_train, y_test = train_test_split(X,
+                                                   y,
+                                                   test_size = 0.3,
+                                                   random_state = 1,
+                                                   stratify = fundraising['Donor?'])
+
+## Step 20 - 
+dt_clf = DecisionTreeClassifier(criterion = 'gini',
+                               max_depth = 5,
+                               random_state = 1)
+
+dt_clf.fit(X_train,
+          y_train)
+
+## Step 21 - 
+preds_train = dt_clf.predict(X_train)
+preds_test = dt_clf.predict(X_test)
+
+## Step 22 - 
+from sklearn import tree
+
+fig = plt.figure(figsize = (10,8))
+
+_ = tree.plot_tree(dt_clf,
+                  feature_names = X_names,
+                  class_names = y_names,
+                  filled = True);
+
+## Step 23 - 
+metrics.confusion_matrix(y_true = y_train,
+                        y_pred = preds_train)
+
+## Step 24 - 
+from sklearn.metrics import ConfusionMatrixDisplay
+
+ConfusionMatrixDisplay.from_estimator(dt_clf,
+                                     X_train,
+                                     y_train,
+                                     display_labels = y_names,
+                                     cmap = 'Blues',
+                                     colorbar = False);
+
+## Step 25 - 
+print('--Classification Metrics: Training Data--')
+print(metrics.classification_report(y_true = y_train,
+                                   y_pred = preds_train))
+
+## Step 26 - 
+from sklearn.metrics import roc_curve, auc
+probs_test = dt_clf.predict_proba(X_train)
+preds_tests = probs_test[:,1]
+
+fpr,tpr,threshold = roc_curve(y_train,preds_train)
+print(fpr)
+print(tpr)
+print(threshold)
+
+## Step 27 - 
+roc_auc = auc(fpr,tpr)
+
+import matplotlib.pyplot as plt
+plt.plot(fpr,tpr,'b',label = 'AUC = %0.4F' % roc_auc)
+plt.plot([0,1],[0,1],'r--')
+plt.xlim([0,1])
+plt.ylim([0,1])
+plt.xlabel('True Positive Rate (TPR)')
+plt.ylabel('False Positive Rate (FPR)')
+plt.title('Receiver Operating Characteristics (ROC)')
+plt.legend(loc = 'lower right')
+plt.show();
+
+
+## Step 28 - 
+fig, ax = plt.subplots(figsize = (8,4))
+
+ConfusionMatrixDisplay.from_predictions(y_test,
+                                       preds_test,
+                                       display_labels = y_names,
+                                       cmap = 'Blues',
+                                       colorbar = False,
+                                       ax=ax);
+
+## Step 29 - 
+print('--Classification Metrics: Testing Data--')
+print(metrics.classification_report(y_true = y_test,
+                                   y_pred = preds_test))
+
+## Step 30 - 
+from sklearn.metrics import roc_curve, auc
+probs_test = dt_clf.predict_proba(X_test)
+preds_tests = probs_test[:,1]
+
+fpr,tpr,threshold = roc_curve(y_test,preds_test)
+print(fpr)
+print(tpr)
+print(threshold)
+
+## Step 31 - 
+roc_auc = auc(fpr,tpr)
+
+import matplotlib.pyplot as plt
+plt.plot(fpr,tpr,'b',label = 'AUC = %0.4F' % roc_auc)
+plt.plot([0,1],[0,1],'r--')
+plt.xlim([0,1])
+plt.ylim([0,1])
+plt.xlabel('True Positive Rate (TPR)')
+plt.ylabel('False Positive Rate (FPR)')
+plt.title('Receiver Operating Characteristics (ROC)')
+plt.legend(loc = 'lower right')
+plt.show();
