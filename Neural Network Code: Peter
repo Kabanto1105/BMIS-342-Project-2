@@ -1,0 +1,40 @@
+## Import libraries after code execution environment reset
+import pandas as pd
+import seaborn as sns
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+from sklearn.neural_network import MLPClassifier
+from sklearn import metrics
+from sklearn.preprocessing import StandardScaler
+
+# Load dataset
+
+mail = pd.read_csv('Fundraising.csv')
+
+X = mail[['NUMPROM', 'INCOME','totalmonths', 'AVGGIFT', 'LASTGIFT']]
+y = mail['TARGET_B']
+
+X_train, X_test, y_train, y_test = train_test_split(X,
+                                                    y,
+                                                    test_size = .4,
+                                                    random_state = 1,
+                                                    stratify = y)
+
+# -- Normalize Income and Lot_Size to be on scale [0,1] --
+from sklearn.preprocessing import MinMaxScaler
+
+scaler = MinMaxScaler()
+X_train_scaled = scaler.fit_transform(X_train)
+X_test_scaled = scaler.transform(X_test)
+
+##Model
+mlp = MLPClassifier(hidden_layer_sizes = (15), 
+                        activation = 'logistic',
+                        solver = 'lbfgs',
+                        max_iter = 10000,
+                        random_state = 5)
+
+mlp.fit(X_train_scaled, y_train)
+
+print(metrics.classification_report(y_true = y_test, 
+                                    y_pred = mlp.predict(X_test_scaled)))
