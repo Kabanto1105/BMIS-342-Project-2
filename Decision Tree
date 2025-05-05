@@ -17,18 +17,18 @@ fundraising['Donor?'] = fundraising['TARGET_B'].apply(lambda x: 'Donor' if x == 
 
 fundraising.head()
 
-## Step 4 - 
+## Step 4 - See the balance of incomes in the dataset
 print(fundraising['INCOME'].value_counts())
 
-## Step 5 - 
+## Step 5 - Create income ordinal for use in the average gift to income column calculation
 fundraising['INCOME'] = fundraising['INCOME'].fillna(0)
 
 fundraising['INCOME_ORDINAL'] = fundraising['INCOME'].astype(int)
 
-## Step 6 - 
+## Step 6 - create average gift to income variable
 fundraising['AVGGIFT_to_INC'] = fundraising['AVGGIFT'] / (fundraising['INCOME_ORDINAL']+1)
 
-## Step 7 - 
+## Step 7 - Catagorize income levels to see if it has an impact on the tree
 def categorize_income(val):
     if val in [1,2]:
         return 'Low'
@@ -37,14 +37,14 @@ def categorize_income(val):
     else:
         return 'High'
 
-## Step 8 - 
+## Step 8 - Continuation of catagorization
 fundraising['income_category'] = fundraising['INCOME'].apply(categorize_income)
 
-## Step 9 - 
+## Step 9 - See balance of Target B
 y = fundraising['TARGET_B']
 y.unique()
 
-## Step 10 - 
+## Step 10 - Create decision tree with all columns included 
 X = fundraising[['Row Id','Row Id.','zipconvert_2','zipconvert_3','zipconvert_4','zipconvert_5',
                 'homeowner dummy','NUMCHLD','INCOME','gender dummy','WEALTH','HV','Icmed','Icavg',
                 'IC15','NUMPROM','RAMNTALL','MAXRAMNT','LASTGIFT','totalmonths','TIMELAG','AVGGIFT',
@@ -57,14 +57,14 @@ y_names = ['Donor','Non Donor']
 print(X_names)
 print(y_names)
 
-## Step 11 - 
+## Step 11 - Split into training and testing for initial tree
 X_train, X_test, y_train, y_test = train_test_split(X,
                                                    y,
                                                    test_size = 0.3,
                                                    random_state = 1,
                                                    stratify = fundraising['Donor?'])
 
-## Step 12 - 
+## Step 12 - Upload decision tree classifier and set max depth for initial model
 dt_clf = DecisionTreeClassifier(criterion = 'gini',
                                max_depth = 5,
                                random_state = 1)
@@ -76,7 +76,7 @@ dt_clf.fit(X_train,
 preds_train = dt_clf.predict(X_train)
 preds_test = dt_clf.predict(X_test)
 
-## Step 14 - 
+## Step 14 - Create initial tree
 from sklearn import tree
 
 fig = plt.figure(figsize = (10,8))
@@ -86,14 +86,14 @@ _ = tree.plot_tree(dt_clf,
              class_names = y_names,
              filled = True);
 
-## Step 15 - 
+## Step 15 - Find variable correlations to target B
 dt_clf.feature_importances_
 
-## Step 16 - 
+## Step 16 - Show confusion matrix metrics to see accuracy of initial model
 metrics.confusion_matrix(y_true = y_train,
                         y_pred = preds_train)
 
-## Step 17 - 
+## Step 17 - Drop columns that were not valued by the feature importances function
 columns_to_drop = ['Row Id','Row Id.','zipconvert_2','zipconvert_3',
                  'zipconvert_4','zipconvert_5','homeowner dummy','NUMCHLD','INCOME','gender dummy',
                  'WEALTH','Icmed','Icavg','LASTGIFT','TIMELAG','AVGGIFT','INCOME_ORDINAL']
@@ -102,7 +102,7 @@ fundraising = fundraising.drop(columns=columns_to_drop)
 
 fundraising.head()
 
-## Step 18 - 
+## Step 18 - Define X and y variables for new model
 X = fundraising[['HV','IC15','NUMPROM','RAMNTALL','MAXRAMNT','totalmonths', 'AVGGIFT_to_INC']]
 
 X_names = list(X.columns)
@@ -112,14 +112,14 @@ y_names = ['Donor','Non Donor']
 print(X_names)
 print(y_names)
 
-## Step 19 - 
+## Step 19 - Split for new model
 X_train, X_test, y_train, y_test = train_test_split(X,
                                                    y,
                                                    test_size = 0.3,
                                                    random_state = 1,
                                                    stratify = fundraising['Donor?'])
 
-## Step 20 - 
+## Step 20 - Set parameters for new model
 dt_clf = DecisionTreeClassifier(criterion = 'gini',
                                max_depth = 5,
                                random_state = 1)
@@ -127,11 +127,11 @@ dt_clf = DecisionTreeClassifier(criterion = 'gini',
 dt_clf.fit(X_train,
           y_train)
 
-## Step 21 - 
+## Step 21 - Set training and testing data
 preds_train = dt_clf.predict(X_train)
 preds_test = dt_clf.predict(X_test)
 
-## Step 22 - 
+## Step 22 - Plot new tree
 from sklearn import tree
 
 fig = plt.figure(figsize = (10,8))
@@ -141,11 +141,11 @@ _ = tree.plot_tree(dt_clf,
                   class_names = y_names,
                   filled = True);
 
-## Step 23 - 
+## Step 23 - Print confusion matrix metrics to confirm increased viability
 metrics.confusion_matrix(y_true = y_train,
                         y_pred = preds_train)
 
-## Step 24 - 
+## Step 24 - Create confusion matrix for training data
 from sklearn.metrics import ConfusionMatrixDisplay
 
 ConfusionMatrixDisplay.from_estimator(dt_clf,
@@ -155,12 +155,12 @@ ConfusionMatrixDisplay.from_estimator(dt_clf,
                                      cmap = 'Blues',
                                      colorbar = False);
 
-## Step 25 - 
+## Step 25 - Print classification metrics for training data
 print('--Classification Metrics: Training Data--')
 print(metrics.classification_report(y_true = y_train,
                                    y_pred = preds_train))
 
-## Step 26 - 
+## Step 26 - Print ROC curve for training data
 from sklearn.metrics import roc_curve, auc
 probs_test = dt_clf.predict_proba(X_train)
 preds_tests = probs_test[:,1]
@@ -170,7 +170,7 @@ print(fpr)
 print(tpr)
 print(threshold)
 
-## Step 27 - 
+## Step 27 - Continuation of ROC curve coding
 roc_auc = auc(fpr,tpr)
 
 import matplotlib.pyplot as plt
@@ -185,7 +185,7 @@ plt.legend(loc = 'lower right')
 plt.show();
 
 
-## Step 28 - 
+## Step 28 - Print confusion matrix for testing data
 fig, ax = plt.subplots(figsize = (8,4))
 
 ConfusionMatrixDisplay.from_predictions(y_test,
@@ -195,12 +195,12 @@ ConfusionMatrixDisplay.from_predictions(y_test,
                                        colorbar = False,
                                        ax=ax);
 
-## Step 29 - 
+## Step 29 - Print classification metrics for testing data
 print('--Classification Metrics: Testing Data--')
 print(metrics.classification_report(y_true = y_test,
                                    y_pred = preds_test))
 
-## Step 30 - 
+## Step 30 - Print ROC curve for testing data
 from sklearn.metrics import roc_curve, auc
 probs_test = dt_clf.predict_proba(X_test)
 preds_tests = probs_test[:,1]
@@ -210,7 +210,7 @@ print(fpr)
 print(tpr)
 print(threshold)
 
-## Step 31 - 
+## Step 31 - Continuation of ROC Curve printing
 roc_auc = auc(fpr,tpr)
 
 import matplotlib.pyplot as plt
